@@ -8,15 +8,15 @@ using EmQueueId = uint32_t;
 
 enum EmQueueType
 {
-    atomic,
-    parallel
+    atomic, //new event will start only after the previous one has been completed
+    parallel //events are processed in parallel
 };
 
 struct EmQueueConfig
 {
-    EmQueueType type;
-    uint32_t      priority;
-    std::function<void(EmEventId)> handler;
+    EmQueueType type; // type of the queue
+    uint32_t      priority; //priority of the queue. Lower values means high priority
+    std::function<void(EmEventId)> handler; //callback will be called for events from this queue
 };
 
 struct EmQueueKey

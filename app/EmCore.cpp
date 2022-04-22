@@ -34,7 +34,11 @@ void EventMachine::threadWorker()
         bool isProcessNeeded = false;
         EmEventId event;
         std::unique_lock lk(m);
-        condVar.wait(lk, [this] {return totalNumOfEvents > 0;});
+        condVar.wait(lk, [this] {return totalNumOfEvents > 0 || exitFlag.load();});
+        if (exitFlag.load())
+        {
+            break;
+        }
         totalNumOfEvents--;
         lk.unlock();
         for (auto& queuePairObj : emQueues)
@@ -77,15 +81,34 @@ void EventMachine::registerGlobalStartHandler(std::function<void()> handler)
 
 void EventMachine::start(uint8_t numOfThreads)
 {
-    //main thread will be used for threadWorker as well
-    for (int i = 0; i < numOfThreads - 1; i++)
+    exitFlag.store(false);
+    for (int i = 0; i < numOfThreads; i++)
     {
-        std::thread t(&EventMachine::threadWorker, this);
-        t.detach();
+
+        threads.emplace_back(&EventMachine::threadWorker, this);
     }
     if (globalStartHandler != nullptr)
     {
         globalStartHandler();
     }
-    threadWorker();
+    for (auto& thread : threads)
+    {
+        thread.join();
+    }
+    clearResources();
+}
+
+void EventMachine::clearResources()
+{
+    totalNumOfEvents = 0;
+    emQueues.clear();
+    emQueueConfigs.clear();
+    threads.clear();
+    globalStartHandler = nullptr;
+}
+
+void EventMachine::stop()
+{
+    exitFlag.store(true);
+    condVar.notify_all();
 }
