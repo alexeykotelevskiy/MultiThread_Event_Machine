@@ -9,7 +9,7 @@ Typical usage:
 3. Start event machine with needed number of threads
 
 example:
-
+```cpp
 void handler1(EmEventId eventId)
 {
     ....
@@ -34,6 +34,5 @@ int main()
     queue2 = em.registerEmQueue(config2);
     em.start(4);  
 }
-
-
+```
 See example in main.cpp
